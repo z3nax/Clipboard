@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard - Local Clipboard Manager</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --text-muted: #888888;
+            --border-color: #333333;
+            --border-hover: #666666;
+            --danger-color: #ef4444;
+            --pin-bg: #1e3a8a;
+            --pin-border: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--text-color);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .github-link {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background-color: transparent;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .github-link:hover {
+            color: var(--text-color);
+            background-color: #262626;
+        }
+
+        .github-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .pill-group {
+            display: inline-flex;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 9999px;
+            padding: 0.2rem;
+            gap: 0.15rem;
+        }
+
+        .pill-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-muted);
+            border-radius: 9999px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .pill-btn:hover {
+            color: var(--text-color);
+            background-color: #262626;
+        }
+
+        .pill-btn svg {
+            width: 11px;
+            height: 11px;
+            fill: currentColor;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--border-hover);
+        }
+
+        .input-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        button {
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+            background-color: transparent;
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .icon-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--text-color);
+            background-color: #262626;
+            border: none;
+        }
+
+        .icon-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .btn-save-icon {
+            color: #3b82f6;
+            width: 38px;
+            height: 38px;
+        }
+
+        .btn-save-icon:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .btn-save-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-pin.pinned {
+            color: var(--text-color);
+            border: 1px solid var(--pin-border);
+            background-color: var(--pin-bg);
+        }
+
+        .btn-danger-icon {
+            color: var(--danger-color);
+            border: none;
+        }
+
+        .btn-danger-icon:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: none;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .history-text {
+            word-break: break-all;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem 0;
+            font-size: 0.9rem;
+        }
+
+        #importFile {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Clipboard</h1>
+                <p>Save, pin, and organize your snippets locally.</p>
+            </div>
+            <a href="https://github.com/z3nax" target="_blank" rel="noopener noreferrer" class="github-link" title="GitHub Profile">
+                <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </a>
+        </header>
+
+        <!-- Input Section -->
+        <div class="card">
+            <textarea id="clipInput" placeholder="Type or paste text here to save..."></textarea>
+            <div class="input-footer">
+                <div class="pill-group">
+                    <button class="pill-btn" id="exportBtn" title="Export JSON">
+                        <svg viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+                        Export
+                    </button>
+                    <button class="pill-btn" id="importTriggerBtn" title="Import JSON">
+                        <svg viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V15H9V9H5L12,2L19,9Z"/></svg>
+                        Import
+                    </button>
+                    <input type="file" id="importFile" accept=".json">
+                </div>
+                
+                <button class="icon-btn btn-save-icon" id="saveBtn" title="Save clip">
+                    <svg viewBox="0 0 24 24"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="card">
+            <div class="history-header">
+                <h3>Saved Clips</h3>
+                <button class="btn-sm btn-danger" id="clearAllBtn">Clear All</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <!-- Dynamically populated clips -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const clipInput = document.getElementById('clipInput');
+        const saveBtn = document.getElementById('saveBtn');
+        const historyList = document.getElementById('historyList');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const importTriggerBtn = document.getElementById('importTriggerBtn');
+        const importFile = document.getElementById('importFile');
+
+        let clips = JSON.parse(localStorage.getItem('clipboard_data')) || [];
+
+        const pinSvgIcon = `<svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/></svg>`;
+        const copySvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>`;
+        const deleteSvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>`;
+
+        function renderClips() {
+            historyList.innerHTML = '';
+
+            if (clips.length === 0) {
+                historyList.innerHTML = '<div class="empty-state">No clips saved yet.</div>';
+                return;
+            }
+
+            const sortedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }))
+                .sort((a, b) => (b.pinned === true) - (a.pinned === true));
+
+            sortedClips.forEach((clipObj) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+
+                const textEl = document.createElement('div');
+                textEl.className = 'history-text';
+                textEl.textContent = clipObj.text;
+
+                const actions = document.createElement('div');
+                actions.className = 'item-actions';
+
+                const pinBtn = document.createElement('button');
+                pinBtn.className = `icon-btn btn-pin ${clipObj.pinned ? 'pinned' : ''}`;
+                pinBtn.innerHTML = pinSvgIcon;
+                pinBtn.title = clipObj.pinned ? 'Unpin clip' : 'Pin clip';
+                pinBtn.onclick = () => togglePin(clipObj.originalIndex);
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'icon-btn';
+                copyBtn.innerHTML = copySvgIcon;
+                copyBtn.title = 'Copy clip';
+                copyBtn.onclick = () => copyToClipboard(clipObj.text, copyBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'icon-btn btn-danger-icon';
+                deleteBtn.innerHTML = deleteSvgIcon;
+                deleteBtn.title = 'Delete clip';
+                deleteBtn.onclick = () => deleteClip(clipObj.originalIndex);
+
+                actions.appendChild(pinBtn);
+                actions.appendChild(copyBtn);
+                actions.appendChild(deleteBtn);
+
+                item.appendChild(textEl);
+                item.appendChild(actions);
+                historyList.appendChild(item);
+            });
+        }
+
+        function saveClip() {
+            const text = clipInput.value.trim();
+            if (!text) return;
+
+            clips.unshift({ text: text, pinned: false });
+            localStorage.setItem('clipboard_data', JSON.stringify(clips));
+            
+            clipInput.value = '';
+            renderClips();
+        }
+
+        function togglePin(index) {
+            clips[index].pinned = !clips[index].pinned;
+            localStorage.setItem('clipboard_data', JSON.stringify(clips));
+            renderClips();
+        }
+
+        async function copyToClipboard(text, buttonElement) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalHtml = buttonElement.innerHTML;
+                buttonElement.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>`;
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHtml;
+                }, 1500);
+            } catch (err) {
+                alert('Failed to copy text.');
+            }
+        }
+
+        function deleteClip(index) {
+            clips.splice(index, 1);
+            localStorage.setItem('clipboard_data', JSON.stringify(clips));
+            renderClips();
+        }
+
+        clearAllBtn.onclick = () => {
+            if (confirm('Are you sure you want to clear all saved clips?')) {
+                clips = [];
+                localStorage.removeItem('clipboard_data');
+                renderClips();
+            }
+        };
+
+        exportBtn.onclick = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(clips, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "clipboard_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+
+        importTriggerBtn.onclick = () => {
+            importFile.click();
+        };
+
+        importFile.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedClips = JSON.parse(e.target.result);
+                    if (Array.isArray(importedClips)) {
+                        clips = importedClips;
+                        localStorage.setItem('clipboard_data', JSON.stringify(clips));
+                        renderClips();
+                        alert('Clips imported successfully!');
+                    } else {
+                        alert('Invalid backup file format.');
+                    }
+                } catch (err) {
+                    alert('Error reading JSON file.');
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = '';
+        };
+
+        clipInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                saveClip();
+            }
+        });
+
+        saveBtn.onclick = saveClip;
+
+        renderClips();
+    </script>
+</body>
+</html>
