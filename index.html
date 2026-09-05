@@ -490,11 +490,9 @@
                 item.appendChild(textEl);
                 item.appendChild(actions);
 
-                // Press and hold for 2 seconds (2000 ms) to trigger delete mode
                 let pressTimer = null;
 
                 const startPress = (e) => {
-                    // Don't trigger long press if clicking action buttons
                     if (e.target.closest('button')) return;
                     pressTimer = setTimeout(() => enterDeleteMode(index), 2000);
                 };
@@ -511,7 +509,6 @@
                 item.addEventListener('touchend', cancelPress);
                 item.addEventListener('touchmove', cancelPress, { passive: true });
 
-                // Desktop Drag and Drop (Entire item is draggable)
                 item.addEventListener('dragstart', (e) => {
                     draggedIndex = index;
                     setTimeout(() => item.classList.add('dragging'), 0);
@@ -536,7 +533,6 @@
                     renderClips();
                 });
 
-                // Mobile Touch Rearrange via Press & Hold
                 let touchDragIndex = null;
 
                 item.addEventListener('touchstart', (e) => {
