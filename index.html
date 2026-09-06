@@ -152,6 +152,24 @@
             border-color: var(--border-hover);
         }
 
+        /* Search input styling */
+        .search-input {
+            width: 100%;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 0.6rem 0.9rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-input:focus {
+            border-color: var(--border-hover);
+        }
+
         .input-footer {
             display: flex;
             justify-content: space-between;
@@ -356,6 +374,30 @@
             font-size: 0.9rem;
         }
 
+        /* Toast Notification Styling */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #333333;
+            color: #ffffff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         #importFile {
             display: none;
         }
@@ -374,6 +416,7 @@
             </a>
         </header>
 
+        <!-- Input Section -->
         <div class="card">
             <textarea id="clipInput" placeholder="Type or paste text here to save..."></textarea>
             <div class="input-footer">
@@ -395,15 +438,22 @@
             </div>
         </div>
 
+        <!-- History Section -->
         <div class="card history-card">
             <div class="history-header">
                 <h3>Saved Clips</h3>
                 <button class="btn-sm btn-danger" id="clearAllBtn">Clear All</button>
             </div>
+            <!-- Added Search Filter Bar -->
+            <input type="text" id="searchInput" class="search-input" placeholder="Search saved clips...">
             <div class="history-list" id="historyList">
-                </div>
+                <!-- Dynamically populated clips -->
+            </div>
         </div>
     </div>
+
+    <!-- Toast Element -->
+    <div id="toast" class="toast">Copied to clipboard!</div>
 
     <script>
         const clipInput = document.getElementById('clipInput');
@@ -413,6 +463,8 @@
         const exportBtn = document.getElementById('exportBtn');
         const importTriggerBtn = document.getElementById('importTriggerBtn');
         const importFile = document.getElementById('importFile');
+        const searchInput = document.getElementById('searchInput');
+        const toast = document.getElementById('toast');
 
         let clips = JSON.parse(localStorage.getItem('clipboard_data')) || [];
 
@@ -423,6 +475,16 @@
 
         let activeEditIndex = null;
         let draggedIndex = null;
+        let toastTimer = null;
+
+        function showToast(message = "Copied to clipboard!") {
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1800);
+        }
 
         function enterEditMode(index) {
             activeEditIndex = index;
@@ -452,12 +514,17 @@
         function renderClips() {
             historyList.innerHTML = '';
 
-            if (clips.length === 0) {
-                historyList.innerHTML = '<div class="empty-state">No clips saved yet.</div>';
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }))
+                                       .filter(clip => clip.text.toLowerCase().includes(searchTerm));
+
+            if (filteredClips.length === 0) {
+                historyList.innerHTML = '<div class="empty-state">No clips found.</div>';
                 return;
             }
 
-            clips.forEach((clipObj, index) => {
+            filteredClips.forEach((clipObj) => {
+                const index = clipObj.originalIndex;
                 const item = document.createElement('div');
                 item.className = `history-item ${activeEditIndex === index ? 'edit-mode' : ''}`;
                 item.setAttribute('draggable', 'true');
@@ -481,7 +548,7 @@
                 copyBtn.className = 'icon-btn normal-action';
                 copyBtn.innerHTML = copySvgIcon;
                 copyBtn.title = 'Copy clip';
-                copyBtn.onclick = () => copyToClipboard(clipObj.text, copyBtn);
+                copyBtn.onclick = () => copyToClipboard(clipObj.text);
 
                 // Edit state actions (Delete replaces Pin, Drag Handle replaces Copy)
                 const deleteBtn = document.createElement('button');
@@ -506,12 +573,15 @@
                 item.appendChild(textEl);
                 item.appendChild(actions);
 
-                // Press and hold logic to switch buttons dynamically without adding visual clutter
+                // Press and hold logic to switch buttons dynamically
                 let pressTimer = null;
 
                 const startPress = (e) => {
                     if (e.target.closest('button') || e.target.closest('.rearrange-handle')) return;
-                    pressTimer = setTimeout(() => enterEditMode(index), 600); // 600ms long press
+                    pressTimer = setTimeout(() => {
+                        enterEditMode(index);
+                        if (navigator.vibrate) navigator.vibrate(40); // Haptic feedback on mobile if supported
+                    }, 600);
                 };
 
                 const cancelPress = () => {
@@ -604,14 +674,10 @@
             renderClips();
         }
 
-        async function copyToClipboard(text, buttonElement) {
+        async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
-                const originalHtml = buttonElement.innerHTML;
-                buttonElement.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>`;
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalHtml;
-                }, 1500);
+                showToast("Copied to clipboard!");
             } catch (err) {
                 alert('Failed to copy text.');
             }
@@ -670,6 +736,8 @@
             reader.readAsText(file);
             importFile.value = '';
         };
+
+        searchInput.addEventListener('input', renderClips);
 
         clipInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
