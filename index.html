@@ -358,19 +358,57 @@
             will-change: transform;
         }
 
+        .history-item.reposition-anim {
+            animation: cardSettle 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes cardSettle {
+            0% {
+                transform: scale(0.97);
+                background-color: #252d3d;
+                border-color: var(--pin-border);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .history-item.pinning-anim {
+            animation: pinSlideToTop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            z-index: 50;
+        }
+
+        @keyframes pinSlideToTop {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+            }
+            40% {
+                transform: scale(1.02) translateY(-4px);
+                background-color: #252d3d;
+                border-color: var(--pin-border);
+                box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+            }
+            100% {
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Lite glow effect during active dragging/rearranging */
         .history-item.dragging {
-            opacity: 0.95;
-            border: 1px dashed var(--border-hover);
+            opacity: 0.98;
+            border: 1px solid #3b82f6;
             transform: scale(1.04);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
-            background-color: #282828;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), 0 16px 36px rgba(0, 0, 0, 0.7);
+            background-color: #1a2333;
             z-index: 20;
-            transition: transform 0.15s ease;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .history-item.drag-over {
             border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.08);
+            box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.15);
+            background-color: rgba(59, 130, 246, 0.05);
             transform: scale(0.98);
         }
 
@@ -714,7 +752,7 @@
             }
         };
 
-        function renderClips() {
+        function renderClips(droppedIndex = null) {
             historyList.innerHTML = '';
 
             const searchTerm = searchInput.value.toLowerCase();
@@ -722,13 +760,11 @@
 
             const mappedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }));
 
-            // Sorting logic: Pinned clips stay at the top when NOT managing. 
-            // When managing, sorting is frozen so you can freely drag/reorder them in place without automatic re-sorting interrupting.
             if (!isManaging) {
-                mappedClips.sort((a, b) => {
-                    if (a.pinned === b.pinned) return 0;
-                    return a.pinned ? -1 : 1;
-                });
+                const pinnedItems = mappedClips.filter(c => c.pinned);
+                const unpinnedItems = mappedClips.filter(c => !c.pinned);
+                mappedClips.length = 0;
+                mappedClips.push(...pinnedItems, ...unpinnedItems);
             }
 
             const filteredClips = mappedClips.filter(clip => {
@@ -746,8 +782,12 @@
                 const index = clipObj.originalIndex;
                 const item = document.createElement('div');
                 item.className = 'history-item';
+                if (droppedIndex === index) {
+                    item.classList.add('reposition-anim');
+                }
                 item.setAttribute('draggable', 'true');
                 item.dataset.index = index;
+                item.dataset.originalIndex = index;
 
                 const contentEl = document.createElement('div');
                 contentEl.className = 'clip-content';
@@ -771,7 +811,7 @@
                 pinBtn.className = `icon-btn btn-pin normal-action ${clipObj.pinned ? 'pinned' : ''}`;
                 pinBtn.innerHTML = pinSvgIcon;
                 pinBtn.title = clipObj.pinned ? 'Unpin clip' : 'Pin clip';
-                pinBtn.onclick = () => togglePin(index);
+                pinBtn.onclick = () => togglePin(index, item);
 
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'icon-btn normal-action';
@@ -831,7 +871,7 @@
                     const movedItem = clips.splice(draggedIndex, 1)[0];
                     clips.splice(index, 0, movedItem);
                     localStorage.setItem('clipboard_data', JSON.stringify(clips));
-                    renderClips();
+                    renderClips(index);
                 });
 
                 let touchDragIndex = null;
@@ -851,13 +891,13 @@
 
                     if (targetItem && targetItem !== item) {
                         targetItem.classList.add('drag-over');
-                        const targetIndex = parseInt(targetItem.dataset.index);
+                        const targetIndex = parseInt(targetItem.dataset.originalIndex);
                         if (!isNaN(targetIndex) && touchDragIndex !== targetIndex) {
                             const movedItem = clips.splice(touchDragIndex, 1)[0];
                             clips.splice(targetIndex, 0, movedItem);
                             touchDragIndex = targetIndex;
                             localStorage.setItem('clipboard_data', JSON.stringify(clips));
-                            renderClips();
+                            renderClips(targetIndex);
                         }
                     }
                 }, { passive: true });
@@ -893,10 +933,19 @@
             renderClips();
         }
 
-        function togglePin(index) {
-            clips[index].pinned = !clips[index].pinned;
+        function togglePin(index, itemElement) {
+            const willBePinned = !clips[index].pinned;
+            clips[index].pinned = willBePinned;
             localStorage.setItem('clipboard_data', JSON.stringify(clips));
-            renderClips();
+
+            if (willBePinned && !isManaging) {
+                itemElement.classList.add('pinning-anim');
+                setTimeout(() => {
+                    renderClips();
+                }, 380);
+            } else {
+                renderClips();
+            }
         }
 
         async function copyToClipboard(text) {
