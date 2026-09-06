@@ -303,7 +303,10 @@
             align-items: center;
             gap: 1rem;
             transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            /* Completely blocks phone text highlighting/selection */
+            -webkit-user-select: none;
             user-select: none;
+            -webkit-touch-callout: none;
             position: relative;
             cursor: grab;
         }
@@ -330,6 +333,10 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             flex-grow: 1;
+            /* Prevents long-press highlight detection on mobile text blocks */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .item-actions {
