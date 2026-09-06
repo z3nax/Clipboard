@@ -722,6 +722,15 @@
 
             const mappedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }));
 
+            // Sorting logic: Pinned clips stay at the top when NOT managing. 
+            // When managing, sorting is frozen so you can freely drag/reorder them in place without automatic re-sorting interrupting.
+            if (!isManaging) {
+                mappedClips.sort((a, b) => {
+                    if (a.pinned === b.pinned) return 0;
+                    return a.pinned ? -1 : 1;
+                });
+            }
+
             const filteredClips = mappedClips.filter(clip => {
                 const titleMatch = (clip.title || '').toLowerCase().includes(searchTerm);
                 const textMatch = clip.text.toLowerCase().includes(searchTerm);
