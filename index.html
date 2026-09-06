@@ -324,7 +324,30 @@
             margin-bottom: 1rem;
         }
 
-        /* Enhanced Smooth Drag & Drop UI Styles */
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-manage {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-manage.active {
+            background-color: var(--border-color);
+            color: var(--text-color);
+            border-color: var(--border-hover);
+        }
+
+        /* iOS-inspired fluid spring physics transition for rearranging cards */
         .history-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -334,8 +357,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            /* Smooth GPU-accelerated transition for shifting positions */
-            transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1), background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
@@ -343,22 +365,21 @@
             will-change: transform;
         }
 
-        /* Active lifting style when item is being dragged */
+        /* Fluid elevation scale animation like an iOS app icon lifting on drag */
         .history-item.dragging {
-            opacity: 0.9;
+            opacity: 0.95;
             border: 1px dashed var(--border-hover);
-            transform: scale(1.03) translateY(-2px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-            background-color: #252525;
+            transform: scale(1.04);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+            background-color: #282828;
             z-index: 20;
-            transition: none; /* Instant tracking during active drag */
+            transition: transform 0.15s ease;
         }
 
-        /* Target placeholder indicator feedback style */
         .history-item.drag-over {
             border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.05);
-            transform: translateY(4px);
+            background-color: rgba(59, 130, 246, 0.08);
+            transform: scale(0.98);
         }
 
         .rearrange-handle {
@@ -395,12 +416,12 @@
             color: var(--danger-color);
         }
 
-        .history-item.edit-mode .normal-action {
-            display: none;
+        .history-list.managing .normal-action {
+            display: none !important;
         }
 
-        .history-item.edit-mode .edit-action {
-            display: flex;
+        .history-list.managing .edit-action {
+            display: flex !important;
         }
 
         .edit-action {
@@ -524,7 +545,10 @@
         <div class="card history-card">
             <div class="history-header">
                 <h3>Saved Clips</h3>
-                <button class="btn-sm btn-danger" id="clearAllBtn">Clear All</button>
+                <div class="header-actions">
+                    <button class="btn-manage" id="manageBtn">Manage</button>
+                    <button class="btn-sm btn-danger" id="clearAllBtn">Clear All</button>
+                </div>
             </div>
             <div class="search-wrapper">
                 <input type="text" id="searchInput" class="search-input" placeholder="Search by title or content (Press '/' to focus)...">
@@ -545,6 +569,7 @@
         const saveBtn = document.getElementById('saveBtn');
         const historyList = document.getElementById('historyList');
         const clearAllBtn = document.getElementById('clearAllBtn');
+        const manageBtn = document.getElementById('manageBtn');
         const exportBtn = document.getElementById('exportBtn');
         const importTriggerBtn = document.getElementById('importTriggerBtn');
         const importFile = document.getElementById('importFile');
@@ -559,7 +584,7 @@
         const deleteSvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>`;
         const dragSvgIcon = `<svg viewBox="0 0 24 24"><path d="M7,10V12H9V10H7M15,10V12H17V10H15M11,10V12H13V10H11M7,6V8H9V6H7M15,6V8H17V6H15M11,6V8H13V6H11M7,14V16H9V14H7M15,14V16H17V14H15M11,14V16H13V14H11Z"/></svg>`;
 
-        let activeEditIndex = null;
+        let isManaging = false;
         let draggedIndex = null;
         let toastTimer = null;
 
@@ -572,30 +597,18 @@
             }, 1800);
         }
 
-        function enterEditMode(index) {
-            activeEditIndex = index;
-            document.querySelectorAll('.history-item').forEach((item, idx) => {
-                if (idx === index) {
-                    item.classList.add('edit-mode');
-                    item.style.borderColor = 'var(--border-hover)';
-                } else {
-                    item.classList.remove('edit-mode');
-                    item.style.borderColor = 'var(--border-color)';
-                }
-            });
-        }
-
-        function exitEditMode(e) {
-            if (activeEditIndex !== null && !e.target.closest('.history-item')) {
-                activeEditIndex = null;
-                document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('edit-mode');
-                    item.style.borderColor = 'var(--border-color)';
-                });
+        manageBtn.onclick = () => {
+            isManaging = !isManaging;
+            if (isManaging) {
+                manageBtn.classList.add('active');
+                manageBtn.textContent = 'Done';
+                historyList.classList.add('managing');
+            } else {
+                manageBtn.classList.remove('active');
+                manageBtn.textContent = 'Manage';
+                historyList.classList.remove('managing');
             }
-        }
-
-        document.addEventListener('click', exitEditMode);
+        };
 
         function updateCharCount() {
             const len = clipInput.value.length;
@@ -629,7 +642,7 @@
             filteredClips.forEach((clipObj) => {
                 const index = clipObj.originalIndex;
                 const item = document.createElement('div');
-                item.className = `history-item ${activeEditIndex === index ? 'edit-mode' : ''}`;
+                item.className = 'history-item';
                 item.setAttribute('draggable', 'true');
                 item.dataset.index = index;
 
@@ -685,32 +698,8 @@
                 item.appendChild(contentEl);
                 item.appendChild(actions);
 
-                let pressTimer = null;
-
-                const startPress = (e) => {
-                    if (e.target.closest('button') || e.target.closest('.rearrange-handle')) return;
-                    pressTimer = setTimeout(() => {
-                        enterEditMode(index);
-                        if (navigator.vibrate) navigator.vibrate(40);
-                    }, 600);
-                };
-
-                const cancelPress = () => {
-                    clearTimeout(pressTimer);
-                };
-
-                item.addEventListener('mousedown', startPress);
-                item.addEventListener('mouseup', cancelPress);
-                item.addEventListener('mouseleave', cancelPress);
-
-                item.addEventListener('touchstart', startPress, { passive: true });
-                item.addEventListener('touchend', cancelPress);
-                item.addEventListener('touchmove', cancelPress, { passive: true });
-
-                /* Enhanced Drag and Drop Animations */
                 item.addEventListener('dragstart', (e) => {
                     draggedIndex = index;
-                    // Slight delay to allow smooth GPU card elevation trigger
                     setTimeout(() => item.classList.add('dragging'), 0);
                 });
 
@@ -779,6 +768,12 @@
 
                 historyList.appendChild(item);
             });
+
+            if (isManaging) {
+                historyList.classList.add('managing');
+            } else {
+                historyList.classList.remove('managing');
+            }
         }
 
         function saveClip() {
@@ -813,14 +808,15 @@
         function deleteClip(index) {
             clips.splice(index, 1);
             localStorage.setItem('clipboard_data', JSON.stringify(clips));
-            activeEditIndex = null;
             renderClips();
         }
 
         clearAllBtn.onclick = () => {
             if (confirm('Are you sure you want to clear all saved clips?')) {
                 clips = [];
-                activeEditIndex = null;
+                isManaging = false;
+                manageBtn.classList.remove('active');
+                manageBtn.textContent = 'Manage';
                 localStorage.removeItem('clipboard_data');
                 renderClips();
             }
@@ -884,12 +880,11 @@
                 e.preventDefault();
                 searchInput.focus();
             } else if (e.key === 'Escape') {
-                if (activeEditIndex !== null) {
-                    activeEditIndex = null;
-                    document.querySelectorAll('.history-item').forEach(item => {
-                        item.classList.remove('edit-mode');
-                        item.style.borderColor = 'var(--border-color)';
-                    });
+                if (isManaging) {
+                    isManaging = false;
+                    manageBtn.classList.remove('active');
+                    manageBtn.textContent = 'Manage';
+                    renderClips();
                 }
                 if (document.activeElement === searchInput && searchInput.value) {
                     searchInput.value = '';
