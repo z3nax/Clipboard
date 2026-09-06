@@ -461,7 +461,6 @@
             font-size: 0.9rem;
         }
 
-        /* Custom Confirmation Modal Styling */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -683,6 +682,7 @@
                 manageBtn.textContent = 'Manage';
                 historyList.classList.remove('managing');
             }
+            renderClips();
         };
 
         function updateCharCount() {
@@ -722,10 +722,13 @@
 
             const mappedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }));
 
-            mappedClips.sort((a, b) => {
-                if (a.pinned === b.pinned) return 0;
-                return a.pinned ? -1 : 1;
-            });
+            // When managing, do not force pin sorting so users can freely rearrange pinned clips relative to others or among themselves. When not managing, pin items stay at the top.
+            if (!isManaging) {
+                mappedClips.sort((a, b) => {
+                    if (a.pinned === b.pinned) return 0;
+                    return a.pinned ? -1 : 1;
+                });
+            }
 
             const filteredClips = mappedClips.filter(clip => {
                 const titleMatch = (clip.title || '').toLowerCase().includes(searchTerm);
