@@ -245,47 +245,6 @@
             padding: 12px 4px 10px 4px;
         }
 
-        /* Top-right positioned delete circle button with an X icon */
-        .delete-circle-btn {
-            display: none;
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background-color: #333333;
-            color: #ffffff;
-            border: 2px solid var(--card-bg);
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            padding: 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            z-index: 5;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        .delete-circle-btn:hover {
-            background-color: var(--danger-color);
-        }
-
-        .delete-circle-btn:active {
-            transform: scale(0.9);
-        }
-
-        .delete-circle-btn svg {
-            width: 15px;
-            height: 15px;
-            stroke: currentColor;
-            stroke-width: 2.8;
-            fill: none;
-        }
-
-        .history-item.delete-mode .delete-circle-btn {
-            display: flex;
-        }
-
         .history-header {
             display: flex;
             justify-content: space-between;
@@ -303,16 +262,10 @@
             align-items: center;
             gap: 1rem;
             transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-            /* Completely blocks phone text highlighting/selection */
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
             position: relative;
-            cursor: grab;
-        }
-
-        .history-item:active {
-            cursor: grabbing;
         }
 
         .history-item.dragging {
@@ -324,6 +277,52 @@
             z-index: 10;
         }
 
+        .rearrange-handle {
+            display: none;
+            color: var(--text-muted);
+            cursor: grab;
+            padding: 0.4rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            touch-action: none;
+        }
+
+        .rearrange-handle:active {
+            cursor: grabbing;
+        }
+
+        .rearrange-handle svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .btn-delete-swap {
+            display: none;
+            color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-delete-swap:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .history-item.edit-mode .normal-action {
+            display: none;
+        }
+
+        .history-item.edit-mode .edit-action {
+            display: flex;
+        }
+
+        .edit-action {
+            display: none;
+        }
+
         .history-text {
             word-break: break-all;
             font-size: 0.9rem;
@@ -333,7 +332,6 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             flex-grow: 1;
-            /* Prevents long-press highlight detection on mobile text blocks */
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
@@ -363,7 +361,7 @@
         }
     </style>
 </head>
-<body onclick="exitDeleteMode(event)">
+<body>
 
     <div class="container">
         <header>
@@ -420,33 +418,36 @@
 
         const pinSvgIcon = `<svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/></svg>`;
         const copySvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>`;
-        const xCircleSvgIcon = `<svg viewBox="0 0 24 24"><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+        const deleteSvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>`;
+        const dragSvgIcon = `<svg viewBox="0 0 24 24"><path d="M7,10V12H9V10H7M15,10V12H17V10H15M11,10V12H13V10H11M7,6V8H9V6H7M15,6V8H17V6H15M11,6V8H13V6H11M7,14V16H9V14H7M15,14V16H17V14H15M11,14V16H13V14H11Z"/></svg>`;
 
+        let activeEditIndex = null;
         let draggedIndex = null;
-        let activeDeleteIndex = null;
 
-        function enterDeleteMode(index) {
-            activeDeleteIndex = index;
+        function enterEditMode(index) {
+            activeEditIndex = index;
             document.querySelectorAll('.history-item').forEach((item, idx) => {
                 if (idx === index) {
-                    item.classList.add('delete-mode');
+                    item.classList.add('edit-mode');
                     item.style.borderColor = 'var(--border-hover)';
                 } else {
-                    item.classList.remove('delete-mode');
+                    item.classList.remove('edit-mode');
                     item.style.borderColor = 'var(--border-color)';
                 }
             });
         }
 
-        function exitDeleteMode(e) {
-            if (activeDeleteIndex !== null && !e.target.closest('.history-item')) {
-                activeDeleteIndex = null;
+        function exitEditMode(e) {
+            if (activeEditIndex !== null && !e.target.closest('.history-item')) {
+                activeEditIndex = null;
                 document.querySelectorAll('.history-item').forEach(item => {
-                    item.classList.remove('delete-mode');
+                    item.classList.remove('edit-mode');
                     item.style.borderColor = 'var(--border-color)';
                 });
             }
         }
+
+        document.addEventListener('click', exitEditMode);
 
         function renderClips() {
             historyList.innerHTML = '';
@@ -458,19 +459,9 @@
 
             clips.forEach((clipObj, index) => {
                 const item = document.createElement('div');
-                item.className = `history-item ${activeDeleteIndex === index ? 'delete-mode' : ''}`;
+                item.className = `history-item ${activeEditIndex === index ? 'edit-mode' : ''}`;
                 item.setAttribute('draggable', 'true');
                 item.dataset.index = index;
-
-                const deleteCircleBtn = document.createElement('button');
-                deleteCircleBtn.className = 'delete-circle-btn';
-                deleteCircleBtn.innerHTML = xCircleSvgIcon;
-                deleteCircleBtn.title = 'Delete clip';
-                deleteCircleBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    deleteClip(index);
-                };
-                item.appendChild(deleteCircleBtn);
 
                 const textEl = document.createElement('div');
                 textEl.className = 'history-text';
@@ -479,29 +470,48 @@
                 const actions = document.createElement('div');
                 actions.className = 'item-actions';
 
+                // Normal state actions (Pin & Copy)
                 const pinBtn = document.createElement('button');
-                pinBtn.className = `icon-btn btn-pin ${clipObj.pinned ? 'pinned' : ''}`;
+                pinBtn.className = `icon-btn btn-pin normal-action ${clipObj.pinned ? 'pinned' : ''}`;
                 pinBtn.innerHTML = pinSvgIcon;
                 pinBtn.title = clipObj.pinned ? 'Unpin clip' : 'Pin clip';
                 pinBtn.onclick = () => togglePin(index);
 
                 const copyBtn = document.createElement('button');
-                copyBtn.className = 'icon-btn';
+                copyBtn.className = 'icon-btn normal-action';
                 copyBtn.innerHTML = copySvgIcon;
                 copyBtn.title = 'Copy clip';
                 copyBtn.onclick = () => copyToClipboard(clipObj.text, copyBtn);
 
+                // Edit state actions (Delete replaces Pin, Drag Handle replaces Copy)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'icon-btn btn-delete-swap edit-action';
+                deleteBtn.innerHTML = deleteSvgIcon;
+                deleteBtn.title = 'Delete clip';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteClip(index);
+                };
+
+                const rearrangeHandle = document.createElement('div');
+                rearrangeHandle.className = 'rearrange-handle edit-action';
+                rearrangeHandle.innerHTML = dragSvgIcon;
+                rearrangeHandle.title = 'Drag to rearrange';
+
                 actions.appendChild(pinBtn);
                 actions.appendChild(copyBtn);
+                actions.appendChild(deleteBtn);
+                actions.appendChild(rearrangeHandle);
 
                 item.appendChild(textEl);
                 item.appendChild(actions);
 
+                // Press and hold logic to switch buttons dynamically without adding visual clutter
                 let pressTimer = null;
 
                 const startPress = (e) => {
-                    if (e.target.closest('button')) return;
-                    pressTimer = setTimeout(() => enterDeleteMode(index), 2000);
+                    if (e.target.closest('button') || e.target.closest('.rearrange-handle')) return;
+                    pressTimer = setTimeout(() => enterEditMode(index), 600); // 600ms long press
                 };
 
                 const cancelPress = () => {
@@ -516,6 +526,7 @@
                 item.addEventListener('touchend', cancelPress);
                 item.addEventListener('touchmove', cancelPress, { passive: true });
 
+                // Desktop Drag and Drop
                 item.addEventListener('dragstart', (e) => {
                     draggedIndex = index;
                     setTimeout(() => item.classList.add('dragging'), 0);
@@ -540,14 +551,15 @@
                     renderClips();
                 });
 
+                // Mobile Touch Rearrange via Handle
                 let touchDragIndex = null;
 
-                item.addEventListener('touchstart', (e) => {
-                    if (e.target.closest('button')) return;
+                rearrangeHandle.addEventListener('touchstart', (e) => {
                     touchDragIndex = index;
+                    item.classList.add('dragging');
                 }, { passive: true });
 
-                item.addEventListener('touchmove', (e) => {
+                rearrangeHandle.addEventListener('touchmove', (e) => {
                     if (touchDragIndex === null) return;
                     const touch = e.touches[0];
                     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -565,8 +577,10 @@
                     }
                 }, { passive: true });
 
-                item.addEventListener('touchend', () => {
+                rearrangeHandle.addEventListener('touchend', () => {
+                    item.classList.remove('dragging');
                     touchDragIndex = null;
+                    renderClips();
                 });
 
                 historyList.appendChild(item);
@@ -606,14 +620,14 @@
         function deleteClip(index) {
             clips.splice(index, 1);
             localStorage.setItem('clipboard_data', JSON.stringify(clips));
-            activeDeleteIndex = null;
+            activeEditIndex = null;
             renderClips();
         }
 
         clearAllBtn.onclick = () => {
             if (confirm('Are you sure you want to clear all saved clips?')) {
                 clips = [];
-                activeDeleteIndex = null;
+                activeEditIndex = null;
                 localStorage.removeItem('clipboard_data');
                 renderClips();
             }
