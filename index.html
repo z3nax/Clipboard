@@ -13,8 +13,8 @@
             --border-color: #333333;
             --border-hover: #666666;
             --danger-color: #ef4444;
-            --pin-bg: #1e3a8a;
-            --pin-border: #3b82f6;
+            --tag-bg: #1e3a8a;
+            --tag-border: #3b82f6;
         }
 
         * {
@@ -90,6 +90,7 @@
             border-radius: 9999px;
             padding: 0.2rem;
             gap: 0.15rem;
+            flex-wrap: wrap;
         }
 
         .pill-btn {
@@ -141,8 +142,13 @@
             gap: 0.5rem;
         }
 
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
         .title-input {
-            width: 100%;
+            flex: 2;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -153,8 +159,20 @@
             transition: border-color 0.2s;
         }
 
-        .title-input:focus {
+        .title-input:focus, .category-input:focus {
             border-color: var(--border-hover);
+        }
+
+        .category-input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 0.6rem 0.75rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
         }
 
         textarea {
@@ -187,6 +205,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 0.5rem;
+            gap: 0.5rem;
         }
 
         .search-input {
@@ -207,7 +226,7 @@
 
         .clear-search-btn {
             position: absolute;
-            right: 8px;
+            right: calc(130px + 0.5rem);
             background: transparent;
             border: none;
             color: var(--text-muted);
@@ -219,9 +238,17 @@
             justify-content: center;
         }
 
-        .clear-search-btn:hover {
+        .filter-category-select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             color: var(--text-color);
-            background: transparent;
+            padding: 0.6rem;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            max-width: 130px;
         }
 
         .input-footer {
@@ -301,12 +328,6 @@
             height: 20px;
         }
 
-        .btn-pin.pinned {
-            color: var(--text-color);
-            border: 1px solid var(--pin-border);
-            background-color: var(--pin-bg);
-        }
-
         .history-list {
             display: flex;
             flex-direction: column;
@@ -348,7 +369,7 @@
             padding: 0.85rem;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 1rem;
             transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
             -webkit-user-select: none;
@@ -366,35 +387,12 @@
             0% {
                 transform: scale(0.97);
                 background-color: #252d3d;
-                border-color: var(--pin-border);
             }
             100% {
                 transform: scale(1);
             }
         }
 
-        .history-item.pinning-anim {
-            animation: pinSlideToTop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            z-index: 50;
-        }
-
-        @keyframes pinSlideToTop {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 rgba(59, 130, 246, 0);
-            }
-            40% {
-                transform: scale(1.02) translateY(-4px);
-                background-color: #252d3d;
-                border-color: var(--pin-border);
-                box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
-            }
-            100% {
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        /* Lite glow effect during active dragging/rearranging */
         .history-item.dragging {
             opacity: 0.98;
             border: 1px solid #3b82f6;
@@ -461,9 +459,15 @@
         .clip-content {
             display: flex;
             flex-direction: column;
-            gap: 0.2rem;
+            gap: 0.3rem;
             flex-grow: 1;
             overflow: hidden;
+        }
+
+        .clip-header-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .clip-title {
@@ -475,6 +479,17 @@
             text-overflow: ellipsis;
         }
 
+        .clip-category-badge {
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            background-color: var(--tag-bg);
+            color: #fff;
+            flex-shrink: 0;
+            border: 1px solid var(--tag-border);
+        }
+
         .history-text {
             word-break: break-all;
             font-size: 0.85rem;
@@ -483,6 +498,22 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        .history-text.expanded {
+            display: block;
+            -webkit-line-clamp: unset;
+        }
+
+        .expand-toggle {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0;
+            align-self: flex-start;
+            margin-top: 0.2rem;
         }
 
         .item-actions {
@@ -606,7 +637,7 @@
         <header>
             <div>
                 <h1>Clipboard</h1>
-                <p>Save, pin, and organize your snippets locally.</p>
+                <p>Save and organize your snippets locally.</p>
             </div>
             <a href="https://github.com/z3nax" target="_blank" rel="noopener noreferrer" class="github-link" title="GitHub Profile">
                 <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -616,8 +647,11 @@
         <!-- Input Section -->
         <div class="card">
             <div class="textarea-wrapper">
-                <input type="text" id="titleInput" class="title-input" placeholder="Title (optional)...">
-                <textarea id="clipInput" placeholder="Type or paste text here to save..."></textarea>
+                <div class="input-row">
+                    <input type="text" id="titleInput" class="title-input" placeholder="Title (optional)...">
+                    <input type="text" id="categoryInput" class="category-input" placeholder="Category (e.g. Work)">
+                </div>
+                <textarea id="clipInput" placeholder="Type or paste text here to save... (Ctrl+S to save)"></textarea>
                 <div class="char-counter" id="charCounter">0 characters</div>
             </div>
             <div class="input-footer">
@@ -648,6 +682,9 @@
             <div class="search-wrapper">
                 <input type="text" id="searchInput" class="search-input" placeholder="Search by title or content (Press '/' to focus)...">
                 <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Clear search">&times;</button>
+                <select id="filterCategorySelect" class="filter-category-select" title="Filter by category">
+                    <option value="all">All Categories</option>
+                </select>
             </div>
             <div class="history-list" id="historyList">
                 <!-- Dynamically populated clips -->
@@ -656,9 +693,9 @@
     </div>
 
     <!-- Confirmation Modal Pop-up Window -->
-    <div class="modal-overlay" id="confirmModal">
+    <div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-card">
-            <h3>Delete Clip</h3>
+            <h3 id="modalTitle">Delete Clip</h3>
             <p>Are you sure you want to delete this saved clip?</p>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" id="modalCancelBtn">Cancel</button>
@@ -671,6 +708,7 @@
 
     <script>
         const titleInput = document.getElementById('titleInput');
+        const categoryInput = document.getElementById('categoryInput');
         const clipInput = document.getElementById('clipInput');
         const charCounter = document.getElementById('charCounter');
         const saveBtn = document.getElementById('saveBtn');
@@ -681,6 +719,7 @@
         const importFile = document.getElementById('importFile');
         const searchInput = document.getElementById('searchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const filterCategorySelect = document.getElementById('filterCategorySelect');
         const toast = document.getElementById('toast');
 
         // Modal Elements
@@ -690,7 +729,6 @@
 
         let clips = JSON.parse(localStorage.getItem('clipboard_data')) || [];
 
-        const pinSvgIcon = `<svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/></svg>`;
         const copySvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>`;
         const deleteSvgIcon = `<svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>`;
         const dragSvgIcon = `<svg viewBox="0 0 24 24"><path d="M7,10V12H9V10H7M15,10V12H17V10H15M11,10V12H13V10H11M7,6V8H9V6H7M15,6V8H17V6H15M11,6V8H13V6H11M7,14V16H9V14H7M15,14V16H17V14H15M11,14V16H13V14H11Z"/></svg>`;
@@ -699,6 +737,7 @@
         let draggedIndex = null;
         let toastTimer = null;
         let pendingDeleteIndex = null;
+        let previouslyFocusedElement = null;
 
         function showToast(message = "Copied to clipboard!") {
             toast.textContent = message;
@@ -729,14 +768,35 @@
         }
 
         function openConfirmModal(index) {
+            previouslyFocusedElement = document.activeElement;
             pendingDeleteIndex = index;
             confirmModal.classList.add('open');
+            modalCancelBtn.focus();
         }
 
         function closeConfirmModal() {
             pendingDeleteIndex = null;
             confirmModal.classList.remove('open');
+            if (previouslyFocusedElement) {
+                previouslyFocusedElement.focus();
+            }
         }
+
+        confirmModal.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusableElements = confirmModal.querySelectorAll('button');
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    lastElement.focus();
+                    e.preventDefault();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    firstElement.focus();
+                    e.preventDefault();
+                }
+            }
+        });
 
         modalCancelBtn.onclick = closeConfirmModal;
         confirmModal.onclick = (e) => {
@@ -752,25 +812,40 @@
             }
         };
 
+        function updateCategoryFilterOptions() {
+            const currentSelection = filterCategorySelect.value;
+            const categories = [...new Set(clips.map(c => c.category?.trim()).filter(Boolean))];
+            
+            filterCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                filterCategorySelect.appendChild(opt);
+            });
+
+            if (categories.includes(currentSelection)) {
+                filterCategorySelect.value = currentSelection;
+            } else {
+                filterCategorySelect.value = 'all';
+            }
+        }
+
         function renderClips(droppedIndex = null) {
             historyList.innerHTML = '';
+            updateCategoryFilterOptions();
 
             const searchTerm = searchInput.value.toLowerCase();
+            const categoryFilter = filterCategorySelect.value;
             clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
 
             const mappedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }));
 
-            if (!isManaging) {
-                const pinnedItems = mappedClips.filter(c => c.pinned);
-                const unpinnedItems = mappedClips.filter(c => !c.pinned);
-                mappedClips.length = 0;
-                mappedClips.push(...pinnedItems, ...unpinnedItems);
-            }
-
             const filteredClips = mappedClips.filter(clip => {
                 const titleMatch = (clip.title || '').toLowerCase().includes(searchTerm);
                 const textMatch = clip.text.toLowerCase().includes(searchTerm);
-                return titleMatch || textMatch;
+                const categoryMatch = categoryFilter === 'all' || (clip.category || '').toLowerCase() === categoryFilter.toLowerCase();
+                return (titleMatch || textMatch) && categoryMatch;
             });
 
             if (filteredClips.length === 0) {
@@ -792,11 +867,25 @@
                 const contentEl = document.createElement('div');
                 contentEl.className = 'clip-content';
 
+                const headerRow = document.createElement('div');
+                headerRow.className = 'clip-header-row';
+
                 if (clipObj.title) {
                     const titleEl = document.createElement('div');
                     titleEl.className = 'clip-title';
                     titleEl.textContent = clipObj.title;
-                    contentEl.appendChild(titleEl);
+                    headerRow.appendChild(titleEl);
+                }
+
+                if (clipObj.category) {
+                    const categoryBadge = document.createElement('span');
+                    categoryBadge.className = 'clip-category-badge';
+                    categoryBadge.textContent = clipObj.category;
+                    headerRow.appendChild(categoryBadge);
+                }
+
+                if (clipObj.title || clipObj.category) {
+                    contentEl.appendChild(headerRow);
                 }
 
                 const textEl = document.createElement('div');
@@ -804,14 +893,19 @@
                 textEl.textContent = clipObj.text;
                 contentEl.appendChild(textEl);
 
+                if (clipObj.text.length > 120 || clipObj.text.split('\n').length > 2) {
+                    const expandBtn = document.createElement('button');
+                    expandBtn.className = 'expand-toggle';
+                    expandBtn.textContent = 'Show more';
+                    expandBtn.onclick = () => {
+                        const isExpanded = textEl.classList.toggle('expanded');
+                        expandBtn.textContent = isExpanded ? 'Show less' : 'Show more';
+                    };
+                    contentEl.appendChild(expandBtn);
+                }
+
                 const actions = document.createElement('div');
                 actions.className = 'item-actions';
-
-                const pinBtn = document.createElement('button');
-                pinBtn.className = `icon-btn btn-pin normal-action ${clipObj.pinned ? 'pinned' : ''}`;
-                pinBtn.innerHTML = pinSvgIcon;
-                pinBtn.title = clipObj.pinned ? 'Unpin clip' : 'Pin clip';
-                pinBtn.onclick = () => togglePin(index, item);
 
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'icon-btn normal-action';
@@ -833,7 +927,6 @@
                 rearrangeHandle.innerHTML = dragSvgIcon;
                 rearrangeHandle.title = 'Drag to rearrange';
 
-                actions.appendChild(pinBtn);
                 actions.appendChild(copyBtn);
                 actions.appendChild(deleteBtn);
                 actions.appendChild(rearrangeHandle);
@@ -922,30 +1015,17 @@
         function saveClip() {
             const text = clipInput.value.trim();
             const title = titleInput.value.trim();
+            const category = categoryInput.value.trim();
             if (!text && !title) return;
 
-            clips.unshift({ title: title, text: text, pinned: false });
+            clips.unshift({ title: title, text: text, category: category });
             localStorage.setItem('clipboard_data', JSON.stringify(clips));
             
             clipInput.value = '';
             titleInput.value = '';
+            categoryInput.value = '';
             updateCharCount();
             renderClips();
-        }
-
-        function togglePin(index, itemElement) {
-            const willBePinned = !clips[index].pinned;
-            clips[index].pinned = willBePinned;
-            localStorage.setItem('clipboard_data', JSON.stringify(clips));
-
-            if (willBePinned && !isManaging) {
-                itemElement.classList.add('pinning-anim');
-                setTimeout(() => {
-                    renderClips();
-                }, 380);
-            } else {
-                renderClips();
-            }
         }
 
         async function copyToClipboard(text) {
@@ -996,6 +1076,8 @@
         };
 
         searchInput.addEventListener('input', renderClips);
+        filterCategorySelect.addEventListener('change', renderClips);
+
         clearSearchBtn.onclick = () => {
             searchInput.value = '';
             renderClips();
@@ -1004,14 +1086,15 @@
 
         clipInput.addEventListener('input', updateCharCount);
 
-        clipInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                saveClip();
-            }
-        });
-
         window.addEventListener('keydown', (e) => {
-            if (e.key === '/' && document.activeElement !== clipInput && document.activeElement !== titleInput && document.activeElement !== searchInput) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                saveClip();
+                showToast("Clip saved successfully!");
+                return;
+            }
+
+            if (e.key === '/' && document.activeElement !== clipInput && document.activeElement !== titleInput && document.activeElement !== categoryInput && document.activeElement !== searchInput) {
                 e.preventDefault();
                 searchInput.focus();
             } else if (e.key === 'Escape') {
