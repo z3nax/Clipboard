@@ -134,9 +134,32 @@
             padding: 0;
         }
 
+        .textarea-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .title-input {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 0.6rem 0.75rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .title-input:focus {
+            border-color: var(--border-hover);
+        }
+
         textarea {
             width: 100%;
-            height: 100px;
+            height: 90px;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -152,22 +175,53 @@
             border-color: var(--border-hover);
         }
 
-        /* Search input styling */
+        .char-counter {
+            align-self: flex-end;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: -0.2rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
         .search-input {
             width: 100%;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-color);
-            padding: 0.6rem 0.9rem;
+            padding: 0.6rem 2.2rem 0.6rem 0.9rem;
             font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s;
-            margin-bottom: 0.5rem;
         }
 
         .search-input:focus {
             border-color: var(--border-hover);
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            display: none;
+            padding: 4px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-search-btn:hover {
+            color: var(--text-color);
+            background: transparent;
         }
 
         .input-footer {
@@ -270,6 +324,7 @@
             margin-bottom: 1rem;
         }
 
+        /* Enhanced Smooth Drag & Drop UI Styles */
         .history-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -279,20 +334,31 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            /* Smooth GPU-accelerated transition for shifting positions */
+            transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1), background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
             position: relative;
+            will-change: transform;
         }
 
+        /* Active lifting style when item is being dragged */
         .history-item.dragging {
-            opacity: 0.8;
+            opacity: 0.9;
             border: 1px dashed var(--border-hover);
-            transform: scale(1.02);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            background-color: #1a1a1a;
-            z-index: 10;
+            transform: scale(1.03) translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+            background-color: #252525;
+            z-index: 20;
+            transition: none; /* Instant tracking during active drag */
+        }
+
+        /* Target placeholder indicator feedback style */
+        .history-item.drag-over {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+            transform: translateY(4px);
         }
 
         .rearrange-handle {
@@ -341,18 +407,31 @@
             display: none;
         }
 
+        .clip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .clip-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .history-text {
             word-break: break-all;
-            font-size: 0.9rem;
-            color: var(--text-color);
+            font-size: 0.85rem;
+            color: var(--text-muted);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            flex-grow: 1;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
         }
 
         .item-actions {
@@ -374,7 +453,6 @@
             font-size: 0.9rem;
         }
 
-        /* Toast Notification Styling */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -418,7 +496,11 @@
 
         <!-- Input Section -->
         <div class="card">
-            <textarea id="clipInput" placeholder="Type or paste text here to save..."></textarea>
+            <div class="textarea-wrapper">
+                <input type="text" id="titleInput" class="title-input" placeholder="Title (optional)...">
+                <textarea id="clipInput" placeholder="Type or paste text here to save..."></textarea>
+                <div class="char-counter" id="charCounter">0 characters</div>
+            </div>
             <div class="input-footer">
                 <div class="pill-group">
                     <button class="pill-btn" id="exportBtn" title="Export JSON">
@@ -444,19 +526,22 @@
                 <h3>Saved Clips</h3>
                 <button class="btn-sm btn-danger" id="clearAllBtn">Clear All</button>
             </div>
-            <!-- Added Search Filter Bar -->
-            <input type="text" id="searchInput" class="search-input" placeholder="Search saved clips...">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search by title or content (Press '/' to focus)...">
+                <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Clear search">&times;</button>
+            </div>
             <div class="history-list" id="historyList">
                 <!-- Dynamically populated clips -->
             </div>
         </div>
     </div>
 
-    <!-- Toast Element -->
     <div id="toast" class="toast">Copied to clipboard!</div>
 
     <script>
+        const titleInput = document.getElementById('titleInput');
         const clipInput = document.getElementById('clipInput');
+        const charCounter = document.getElementById('charCounter');
         const saveBtn = document.getElementById('saveBtn');
         const historyList = document.getElementById('historyList');
         const clearAllBtn = document.getElementById('clearAllBtn');
@@ -464,6 +549,7 @@
         const importTriggerBtn = document.getElementById('importTriggerBtn');
         const importFile = document.getElementById('importFile');
         const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
         const toast = document.getElementById('toast');
 
         let clips = JSON.parse(localStorage.getItem('clipboard_data')) || [];
@@ -511,12 +597,29 @@
 
         document.addEventListener('click', exitEditMode);
 
+        function updateCharCount() {
+            const len = clipInput.value.length;
+            charCounter.textContent = `${len} character${len === 1 ? '' : 's'}`;
+        }
+
         function renderClips() {
             historyList.innerHTML = '';
 
             const searchTerm = searchInput.value.toLowerCase();
-            const filteredClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }))
-                                       .filter(clip => clip.text.toLowerCase().includes(searchTerm));
+            clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
+
+            const mappedClips = clips.map((clip, originalIndex) => ({ ...clip, originalIndex }));
+
+            mappedClips.sort((a, b) => {
+                if (a.pinned === b.pinned) return 0;
+                return a.pinned ? -1 : 1;
+            });
+
+            const filteredClips = mappedClips.filter(clip => {
+                const titleMatch = (clip.title || '').toLowerCase().includes(searchTerm);
+                const textMatch = clip.text.toLowerCase().includes(searchTerm);
+                return titleMatch || textMatch;
+            });
 
             if (filteredClips.length === 0) {
                 historyList.innerHTML = '<div class="empty-state">No clips found.</div>';
@@ -530,14 +633,24 @@
                 item.setAttribute('draggable', 'true');
                 item.dataset.index = index;
 
+                const contentEl = document.createElement('div');
+                contentEl.className = 'clip-content';
+
+                if (clipObj.title) {
+                    const titleEl = document.createElement('div');
+                    titleEl.className = 'clip-title';
+                    titleEl.textContent = clipObj.title;
+                    contentEl.appendChild(titleEl);
+                }
+
                 const textEl = document.createElement('div');
                 textEl.className = 'history-text';
                 textEl.textContent = clipObj.text;
+                contentEl.appendChild(textEl);
 
                 const actions = document.createElement('div');
                 actions.className = 'item-actions';
 
-                // Normal state actions (Pin & Copy)
                 const pinBtn = document.createElement('button');
                 pinBtn.className = `icon-btn btn-pin normal-action ${clipObj.pinned ? 'pinned' : ''}`;
                 pinBtn.innerHTML = pinSvgIcon;
@@ -550,7 +663,6 @@
                 copyBtn.title = 'Copy clip';
                 copyBtn.onclick = () => copyToClipboard(clipObj.text);
 
-                // Edit state actions (Delete replaces Pin, Drag Handle replaces Copy)
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'icon-btn btn-delete-swap edit-action';
                 deleteBtn.innerHTML = deleteSvgIcon;
@@ -570,17 +682,16 @@
                 actions.appendChild(deleteBtn);
                 actions.appendChild(rearrangeHandle);
 
-                item.appendChild(textEl);
+                item.appendChild(contentEl);
                 item.appendChild(actions);
 
-                // Press and hold logic to switch buttons dynamically
                 let pressTimer = null;
 
                 const startPress = (e) => {
                     if (e.target.closest('button') || e.target.closest('.rearrange-handle')) return;
                     pressTimer = setTimeout(() => {
                         enterEditMode(index);
-                        if (navigator.vibrate) navigator.vibrate(40); // Haptic feedback on mobile if supported
+                        if (navigator.vibrate) navigator.vibrate(40);
                     }, 600);
                 };
 
@@ -596,23 +707,33 @@
                 item.addEventListener('touchend', cancelPress);
                 item.addEventListener('touchmove', cancelPress, { passive: true });
 
-                // Desktop Drag and Drop
+                /* Enhanced Drag and Drop Animations */
                 item.addEventListener('dragstart', (e) => {
                     draggedIndex = index;
+                    // Slight delay to allow smooth GPU card elevation trigger
                     setTimeout(() => item.classList.add('dragging'), 0);
                 });
 
                 item.addEventListener('dragend', () => {
                     item.classList.remove('dragging');
                     draggedIndex = null;
+                    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('drag-over'));
                 });
 
                 item.addEventListener('dragover', (e) => {
                     e.preventDefault();
+                    if (draggedIndex !== null && draggedIndex !== index) {
+                        item.classList.add('drag-over');
+                    }
+                });
+
+                item.addEventListener('dragleave', () => {
+                    item.classList.remove('drag-over');
                 });
 
                 item.addEventListener('drop', (e) => {
                     e.preventDefault();
+                    item.classList.remove('drag-over');
                     if (draggedIndex === null || draggedIndex === index) return;
                     
                     const movedItem = clips.splice(draggedIndex, 1)[0];
@@ -621,7 +742,6 @@
                     renderClips();
                 });
 
-                // Mobile Touch Rearrange via Handle
                 let touchDragIndex = null;
 
                 rearrangeHandle.addEventListener('touchstart', (e) => {
@@ -635,7 +755,10 @@
                     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
                     const targetItem = targetElement ? targetElement.closest('.history-item') : null;
 
+                    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('drag-over'));
+
                     if (targetItem && targetItem !== item) {
+                        targetItem.classList.add('drag-over');
                         const targetIndex = parseInt(targetItem.dataset.index);
                         if (!isNaN(targetIndex) && touchDragIndex !== targetIndex) {
                             const movedItem = clips.splice(touchDragIndex, 1)[0];
@@ -650,6 +773,7 @@
                 rearrangeHandle.addEventListener('touchend', () => {
                     item.classList.remove('dragging');
                     touchDragIndex = null;
+                    document.querySelectorAll('.history-item').forEach(el => el.classList.remove('drag-over'));
                     renderClips();
                 });
 
@@ -659,12 +783,15 @@
 
         function saveClip() {
             const text = clipInput.value.trim();
-            if (!text) return;
+            const title = titleInput.value.trim();
+            if (!text && !title) return;
 
-            clips.unshift({ text: text, pinned: false });
+            clips.unshift({ title: title, text: text, pinned: false });
             localStorage.setItem('clipboard_data', JSON.stringify(clips));
             
             clipInput.value = '';
+            titleInput.value = '';
+            updateCharCount();
             renderClips();
         }
 
@@ -738,6 +865,13 @@
         };
 
         searchInput.addEventListener('input', renderClips);
+        clearSearchBtn.onclick = () => {
+            searchInput.value = '';
+            renderClips();
+            searchInput.focus();
+        };
+
+        clipInput.addEventListener('input', updateCharCount);
 
         clipInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -745,9 +879,30 @@
             }
         });
 
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement !== clipInput && document.activeElement !== titleInput && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            } else if (e.key === 'Escape') {
+                if (activeEditIndex !== null) {
+                    activeEditIndex = null;
+                    document.querySelectorAll('.history-item').forEach(item => {
+                        item.classList.remove('edit-mode');
+                        item.style.borderColor = 'var(--border-color)';
+                    });
+                }
+                if (document.activeElement === searchInput && searchInput.value) {
+                    searchInput.value = '';
+                    renderClips();
+                    searchInput.blur();
+                }
+            }
+        });
+
         saveBtn.onclick = saveClip;
 
         renderClips();
+        updateCharCount();
     </script>
 </body>
 </html>
